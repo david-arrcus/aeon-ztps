@@ -138,7 +138,7 @@ class OpxBootstrap(object):
                 pass
             elif i == 1:
                 # Sending sudo password
-                ssh.sendline(self.passwd)
+                ssh.sendline(password)
                 j = ssh.expect([rootprompt, 'Sorry, try again'])
                 if j == 0:
                     pass
