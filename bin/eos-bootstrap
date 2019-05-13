@@ -309,6 +309,13 @@ def check_os_install(dev):
 
 def do_os_install(dev, image_name):
 
+    try:
+        dev.api.execute('dir usb1:')
+        g_log.info('usb exist, switch default drive to usb.')
+        drive = 'usb1'
+    except CommandError:
+        drive = 'flash'
+
     vendor_dir = os.path.join(g_cli_args.topdir, 'vendor_images', _OS_NAME)
     image_fpath = os.path.join(vendor_dir, image_name)
 
@@ -332,7 +339,7 @@ def do_os_install(dev, image_name):
     # --------------------------------
 
     try:
-        dev.api.execute('dir flash:%s' % image_name)
+        dev.api.execute('dir %s:%s' % (drive, image_name))
         g_log.info('file already exists on device, skipping copy.')
         has_file = True
     except CommandError:
@@ -344,9 +351,9 @@ def do_os_install(dev, image_name):
         # -------------------------
 
         cmds = ['routing-context vrf {}'.format(dev.api.VRF_MGMT),
-                'copy http://{server}/images/{OS}/{filename} flash:'
+                'copy http://{server}/images/{OS}/{filename} {drive}:'
                 .format(server=g_self_server, OS=_OS_NAME,
-                        filename=image_name)]
+                        filename=image_name, drive=drive)]
 
         try:
             dev.api.execute(cmds)
@@ -367,7 +374,7 @@ def do_os_install(dev, image_name):
     # verify MD5 checksum
     # -------------------
 
-    got_md5 = dev.api.execute('verify /md5 flash:{}'.format(image_name))
+    got_md5 = dev.api.execute('verify /md5 {}:{}'.format(drive, image_name))
     has_md5 = got_md5['messages'][0].split('=')[-1].strip()
     if has_md5 != md5sum:
         errmsg = 'image file {filename} MD5 mismatch has={has} should={should}' \
@@ -386,7 +393,7 @@ def do_os_install(dev, image_name):
     # configure to use this version for system boot
     # ---------------------------------------------
 
-    dev.api.configure(['boot system flash:%s' % image_name])
+    dev.api.configure(['boot system %s:%s' % (drive, image_name)])
     dev.api.execute('copy running-config status-config')
 
 
